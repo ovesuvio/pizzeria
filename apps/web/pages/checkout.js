@@ -76,13 +76,13 @@ export default function CheckoutPage() {
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('checkout.addressPlaceholder')} />
           <label>{t('checkout.scheduled')}</label>
           <input type="time" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+          <button className="btn primary" disabled={mounted ? !token : true} onClick={placeOrder}>{t('checkout.place')}</button>
         </div>
         <div>
           <div>{t('checkout.payment')}</div>
           <label><input type="radio" checked={payment==='stripe'} onChange={() => setPayment('stripe')} /> {t('checkout.payStripe')}</label>
           <label><input type="radio" checked={payment==='paypal'} onChange={() => setPayment('paypal')} /> {t('checkout.payPaypal')}</label>
           <label><input type="radio" checked={payment==='cash'} onChange={() => setPayment('cash')} /> {t('checkout.payCash')}</label>
-          <button className="btn primary" disabled={mounted ? !token : true} onClick={placeOrder}>{t('checkout.place')}</button>
         </div>
       </div>
       {status && <div className="status">{status}</div>}

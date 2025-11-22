@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { apiGetAuth } from '../lib/api';
 
 const CartContext = createContext();
 
@@ -37,6 +38,20 @@ export function CartProvider({ children }) {
   }, [mode, subtotal]);
 
   const total = useMemo(() => subtotal + deliveryFee, [subtotal, deliveryFee]);
+
+  useEffect(() => {
+    async function autofillAddress() {
+      if (mode !== 'delivery') return;
+      if (address && address.trim().length > 0) return;
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (!token) return;
+        const data = await apiGetAuth('/users/me', token);
+        if (data && data.address) setAddress(data.address);
+      } catch (_) {}
+    }
+    autofillAddress();
+  }, [mode]);
 
   const value = {
     items,

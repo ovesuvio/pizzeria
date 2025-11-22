@@ -17,7 +17,7 @@ export default function CartPage() {
             {items.map((i, idx) => (
               <div key={idx} className="cart-item">
                 <div>{i.product.name} × {i.quantity}</div>
-                <div>€ {(i.product.price * i.quantity).toFixed(2)}</div>
+                <div className="item-price">€ {(i.product.price * i.quantity).toFixed(2)}</div>
                 <button className="btn" onClick={() => removeItem(i.product._id, i.extras)}>{t('cart.remove')}</button>
               </div>
             ))}
@@ -33,8 +33,10 @@ export default function CartPage() {
             </div>
             <div>{t('cart.subtotal')}: € {subtotal.toFixed(2)}</div>
             <div>{t('cart.deliveryFee')}: € {deliveryFee.toFixed(2)}</div>
-            <div className="total">{t('cart.total')}: € {total.toFixed(2)}</div>
-            <Link className="btn primary" href="/checkout">{t('cart.checkout')}</Link>
+            <div className="cart-total-actions">
+              <div className="total">{t('cart.total')}: € {total.toFixed(2)}</div>
+              <Link className="btn primary" href="/checkout">{t('cart.checkout')}</Link>
+            </div>
           </div>
         </>
       )}

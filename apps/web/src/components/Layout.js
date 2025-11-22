@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { io } from 'socket.io-client';
 import { API_BASE } from '../lib/api';
 import { useI18n, SUPPORTED_LANGS } from '../lib/i18n';
+import { useCart } from '../context/CartContext';
 
 export default function Layout({ children }) {
   const router = useRouter();
@@ -12,6 +13,10 @@ export default function Layout({ children }) {
   const [logged, setLogged] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { items, total } = useCart();
+  const cartCount = Array.isArray(items) ? items.reduce((sum, i) => sum + (i.quantity || 0), 0) : 0;
+  const localeMap = { it: 'it-IT', de: 'de-DE', en: 'en-GB' };
+  const cartTotalFmt = new Intl.NumberFormat(localeMap[lang] || 'it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(total || 0);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -103,35 +108,54 @@ export default function Layout({ children }) {
   return (
     <div className="app">
       <header className="header">
-        <div className="brand">O Vesuvio</div>
+        <div className="brand">
+          O Vesuvio
+          {total > 0 && (
+            <span className="brand-total" aria-label={t('nav.cart') + ' totale'}>
+              {cartTotalFmt} • {cartCount}
+            </span>
+          )}
+        </div>
         <nav className={menuOpen ? 'open' : ''}>
           <button className="nav-toggle" aria-label="Menu" onClick={() => setMenuOpen((v) => !v)}>☰</button>
+          <div className="nav-quick">
+            <Link href="/cart" className="nav-primary cart-link" style={{ marginLeft: 8 }}>
+              <span className="cart-icon">🛒</span>
+              <span className="cart-label">{t('nav.cart')}</span>
+            </Link>
+            {!logged && (
+              <Link href="/profile" aria-label={t('nav.login')} className="nav-primary login-link mobile-only" style={{ marginLeft: 8 }}>
+                <span className="login-icon">👤</span>
+              </Link>
+            )}
+          </div>
           <div className="nav-links">
-          <Link href="/">{t('nav.home')}</Link>
-          <Link href="/menu">{t('nav.menu')}</Link>
-          <Link href="/cart">{t('nav.cart')}</Link>
-          {!logged && <Link href="/profile">{t('nav.profile')}</Link>}
-          <Link href="/orders">{t('nav.orders')}</Link>
-          <Link href="/gallery">{t('nav.gallery')}</Link>
-          <Link href="/news">{t('nav.news')}</Link>
-          {isAdmin && <Link href="/admin">{t('nav.admin')}</Link>}
-          <select
-            aria-label={t('nav.language')}
-            value={lang}
-            onChange={(e) => setLang(e.target.value)}
-            style={{ marginLeft: 8 }}
-          >
-            {SUPPORTED_LANGS.map((l) => (
-              <option key={l} value={l}>
-                {l.toUpperCase()}
-              </option>
-            ))}
-          </select>
-          {logged ? (
-            <button className="btn" style={{ marginLeft: 8 }} onClick={handleLogout}>{t('nav.logout')}</button>
-          ) : (
-            <button className="btn" style={{ marginLeft: 8 }} onClick={handleLogin}>{t('nav.login')}</button>
-          )}
+            <Link href="/">{t('nav.home')}</Link>
+            <Link href="/menu">{t('nav.menu')}</Link>
+            <Link href="/news">{t('nav.news')}</Link>
+            <Link href="/orders">{t('nav.orders')}</Link>
+            <Link href="/gallery">{t('nav.gallery')}</Link>
+            {isAdmin && <Link href="/admin">{t('nav.admin')}</Link>}
+            <select
+              aria-label={t('nav.language')}
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              style={{ marginLeft: 8 }}
+            >
+              {SUPPORTED_LANGS.map((l) => (
+                <option key={l} value={l}>
+                  {l.toUpperCase()}
+                </option>
+              ))}
+            </select>
+            {!logged && (
+              <Link href="/profile" aria-label={t('nav.login')} className="nav-primary login-link desktop-only" style={{ marginLeft: 8 }}>
+                <span className="login-icon">👤</span>
+              </Link>
+            )}
+            {logged ? (
+              <button className="btn" style={{ marginLeft: 8 }} onClick={handleLogout}>{t('nav.logout')}</button>
+            ) : null}
           </div>
       </nav>
       </header>
