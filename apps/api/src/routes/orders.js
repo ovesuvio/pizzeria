@@ -1,6 +1,7 @@
 const express = require('express');
 const Order = require('../models/order');
 const auth = require('../middleware/auth');
+const { notifyOrderStatus } = require('../lib/notify');
 
 module.exports = function(memory, db) {
   const router = express.Router();
@@ -29,10 +30,12 @@ module.exports = function(memory, db) {
         // TODO: integra Stripe/PayPal reali
       }
       req.io.emit('order_update', { orderId: order._id, status: order.status, userId });
+      notifyOrderStatus(memory, db, { userId, orderId: order._id, status: order.status });
       return res.json({ ok: true, orderId: order._id });
     }
     const created = await Order.create(order);
     req.io.emit('order_update', { orderId: created._id, status: created.status, userId: created.userId });
+    notifyOrderStatus(memory, db, { userId: created.userId, orderId: created._id, status: created.status });
     res.json({ ok: true, orderId: created._id });
   });
 
@@ -44,10 +47,12 @@ module.exports = function(memory, db) {
       if (!o) return res.status(404).json({ error: 'Ordine non trovato' });
       o.status = status;
       req.io.emit('order_update', { orderId: id, status, userId: o.userId });
+      notifyOrderStatus(memory, db, { userId: o.userId, orderId: id, status });
       return res.json(o);
     }
     const o = await Order.findByIdAndUpdate(id, { status }, { new: true });
     req.io.emit('order_update', { orderId: id, status, userId: o?.userId });
+    if (o?.userId) notifyOrderStatus(memory, db, { userId: o.userId, orderId: id, status });
     res.json(o);
   });
 
