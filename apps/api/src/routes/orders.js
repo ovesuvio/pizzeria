@@ -56,5 +56,20 @@ module.exports = function(memory, db) {
     res.json(o);
   });
 
+  router.delete('/:id', auth(true), async (req, res) => {
+    const { id } = req.params;
+    if (db.useMemory) {
+      const idx = memory.orders.findIndex((o) => o._id === id);
+      if (idx === -1) return res.status(404).json({ error: 'Ordine non trovato' });
+      const [removed] = memory.orders.splice(idx, 1);
+      req.io.emit('order_update', { orderId: id, status: 'deleted', userId: removed?.userId });
+      return res.json({ ok: true });
+    }
+    const removed = await Order.findByIdAndDelete(id);
+    if (!removed) return res.status(404).json({ error: 'Ordine non trovato' });
+    req.io.emit('order_update', { orderId: id, status: 'deleted', userId: removed?.userId });
+    res.json({ ok: true });
+  });
+
   return router;
 }

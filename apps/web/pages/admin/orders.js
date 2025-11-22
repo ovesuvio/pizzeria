@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { API_BASE, apiPut } from '../../src/lib/api';
+import { API_BASE, apiPut, apiDelete } from '../../src/lib/api';
 import { io } from 'socket.io-client';
 
 export default function AdminOrdersPage() {
@@ -101,6 +101,16 @@ export default function AdminOrdersPage() {
     }
   }
 
+  async function deleteOrder(id) {
+    try {
+      await apiDelete(`/orders/${id}`, token);
+      setMsg('Ordine eliminato');
+      fetchOrders();
+    } catch (e) {
+      setMsg('Errore eliminazione ordine');
+    }
+  }
+
   return (
     <div>
       <h2>Admin • Ordini</h2>
@@ -179,6 +189,9 @@ export default function AdminOrdersPage() {
                     <button className="btn" onClick={() => updateStatus(o._id, 'preparazione')}>In preparazione</button>
                     <button className="btn" onClick={() => updateStatus(o._id, 'consegna')}>In consegna</button>
                     <button className="btn" onClick={() => updateStatus(o._id, 'consegnato')}>Consegnato</button>
+                    {o.status === 'ricevuto' && (
+                      <button className="btn" onClick={() => deleteOrder(o._id)}>Elimina</button>
+                    )}
                   </div>
                 </div>
                 );})}

@@ -41,3 +41,14 @@ export async function apiPut(path, body, token) {
   if (!res.ok) throw new Error('Errore richiesta');
   return res.json();
 }
+
+export async function apiDelete(path, token) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error('Errore richiesta');
+  return res.json();
+}
