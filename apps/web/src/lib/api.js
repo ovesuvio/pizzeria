@@ -1,4 +1,4 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
 export async function apiGet(path) {
   const res = await fetch(`${API_BASE}${path}`);
