@@ -1,0 +1,85 @@
+:root {
+  --lava-red: #d7263d;
+  --vesuvio-orange: #ff7f11;
+  --lava-black: #1f1f1f;
+  --cream: #fff6e6;
+}
+
+html, body, #__next { height: 100%; }
+body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu; background: var(--cream); color: var(--lava-black); }
+
+.header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--lava-black); color: white; }
+.brand { font-weight: 700; letter-spacing: 0.5px; }
+.header nav a { color: white; margin: 0 8px; text-decoration: none; }
+.nav-toggle { display: none; background: transparent; color: #fff; border: 1px solid #fff; padding: 6px 8px; border-radius: 6px; }
+.header nav .nav-links { display: inline-flex; align-items: center; }
+.main { padding: 20px; }
+.footer { padding: 12px 20px; background: #111; color: #ddd; }
+
+.hero { text-align: center; padding: 60px 20px; background: linear-gradient(135deg, var(--lava-red), var(--vesuvio-orange)); color: white; border-radius: 8px; }
+.hero .btn { margin-top: 16px; }
+
+.btn { background: #eee; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; }
+.btn.primary { background: var(--vesuvio-orange); color: #111; font-weight: 600; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+.card-img { width: 100%; height: 140px; object-fit: cover; }
+.card-body { padding: 12px; }
+.card-title { font-weight: 600; }
+.card-desc { font-size: 0.9rem; color: #555; }
+.card-meta { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+.price { font-weight: 700; color: var(--lava-red); }
+.available { color: green; }
+.soldout { color: #999; }
+
+.cart-items { display: grid; gap: 10px; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px; border-radius: 8px; }
+.cart-summary { margin-top: 16px; background: white; padding: 12px; border-radius: 8px; }
+.total { font-weight: 700; }
+
+.checkout-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.form { display: grid; gap: 8px; max-width: 420px; }
+.form input { padding: 8px; border-radius: 6px; border: 1px solid #ccc; }
+.actions { display: flex; gap: 8px; }
+.status { margin-top: 16px; padding: 10px; background: #fff; border-left: 4px solid var(--vesuvio-orange); }
+.toast { position: fixed; right: 16px; bottom: 16px; background: #111; color: #fff; padding: 10px 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+
+.order { background: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+.order.admin { border-left: 4px solid var(--lava-red); }
+
+.subcategory { margin-top: 12px; }
+.subcategory h4 { margin: 8px 0; font-size: 1.05rem; color: #333; }
+
+.news-section { background: #fff; padding: 14px; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,0.06); border-left: 4px solid var(--vesuvio-orange); }
+.news-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+.news-compact { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.news-thumb { width: 120px; height: 90px; flex: 0 0 auto; border-radius: 6px; overflow: hidden; }
+.news-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.news-content { flex: 1; min-width: 240px; }
+.news-title { font-size: 1.25rem; }
+.news-text { white-space: pre-line; font-size: 1.15rem; line-height: 1.5; }
+
+@media (max-width: 768px) {
+  .checkout-grid { grid-template-columns: 1fr; }
+  .header { padding: 10px 12px; }
+  .header nav { flex-wrap: wrap; gap: 6px; }
+  .nav-toggle { display: inline-flex; align-items: center; }
+  .header nav .nav-links { display: none; width: 100%; }
+  .header nav.open .nav-links { display: flex; flex-direction: column; gap: 8px; }
+  .header nav a { margin: 2px 6px; }
+  .main { padding: 12px; }
+  .hero { padding: 36px 16px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .card-img { height: 100px; }
+  .news-thumb { width: 100px; height: 75px; }
+  .news-title { font-size: 1.15rem; }
+  .news-text { font-size: 1.05rem; }
+  .news-actions { justify-content: flex-start; }
+}
+
+@media (max-width: 1024px) {
+  .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .card-img { height: 120px; }
+}
