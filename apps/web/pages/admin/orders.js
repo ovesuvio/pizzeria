@@ -46,13 +46,17 @@ export default function AdminOrdersPage() {
           const play = () => {
             const o1 = ctx.createOscillator();
             const o2 = ctx.createOscillator();
+            const o3 = ctx.createOscillator();
             const g = ctx.createGain();
             o1.type = 'sine';
             o2.type = 'sine';
+            o3.type = 'sine';
             o1.frequency.value = 440;
             o2.frequency.value = 480;
+            o3.frequency.value = 520;
             o1.connect(g);
             o2.connect(g);
+            o3.connect(g);
             g.connect(ctx.destination);
             const t = ctx.currentTime;
             g.gain.setValueAtTime(0, t);
@@ -65,8 +69,10 @@ export default function AdminOrdersPage() {
             g.gain.linearRampToValueAtTime(0, t + 1.86);
             o1.start(t);
             o2.start(t);
+            o3.start(t);
             o1.stop(t + 2.0);
             o2.stop(t + 2.0);
+            o3.stop(t + 2.0);
           };
           play();
           unreadRef.current.add(evt.orderId);
@@ -103,6 +109,7 @@ export default function AdminOrdersPage() {
       };
       mk(440);
       mk(480);
+      mk(520);
     };
     intervalRef.current = setInterval(() => {
       if (!unreadRef.current.size) return;

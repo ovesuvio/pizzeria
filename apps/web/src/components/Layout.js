@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { io } from 'socket.io-client';
 import { API_BASE } from '../lib/api';
@@ -14,6 +14,7 @@ export default function Layout({ children }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { items, total } = useCart();
+  const audioCtxRef = useRef(null);
   const cartCount = Array.isArray(items) ? items.reduce((sum, i) => sum + (i.quantity || 0), 0) : 0;
   const localeMap = { it: 'it-IT', de: 'de-DE', en: 'en-GB' };
   const cartTotalFmt = new Intl.NumberFormat(localeMap[lang] || 'it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(total || 0);
@@ -32,6 +33,43 @@ export default function Layout({ children }) {
       if (!evt || !evt.status || !evt.orderId) return;
       // Notifica soltanto l'utente proprietario quando disponibile
       if (payload?.userId && evt.userId && payload.userId !== evt.userId) return;
+      try {
+        let ctx = audioCtxRef.current;
+        if (!ctx) {
+          ctx = new (window.AudioContext || window.webkitAudioContext)();
+          audioCtxRef.current = ctx;
+        }
+        if (ctx.resume) ctx.resume();
+        const o1 = ctx.createOscillator();
+        const o2 = ctx.createOscillator();
+        const o3 = ctx.createOscillator();
+        const g = ctx.createGain();
+        o1.type = 'sine';
+        o2.type = 'sine';
+        o3.type = 'sine';
+        o1.frequency.value = 440;
+        o2.frequency.value = 480;
+        o3.frequency.value = 520;
+        o1.connect(g);
+        o2.connect(g);
+        o3.connect(g);
+        g.connect(ctx.destination);
+        const t0 = ctx.currentTime;
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.14, t0 + 0.02);
+        g.gain.setValueAtTime(0.14, t0 + 0.8);
+        g.gain.linearRampToValueAtTime(0, t0 + 0.82);
+        g.gain.setValueAtTime(0, t0 + 1.02);
+        g.gain.linearRampToValueAtTime(0.14, t0 + 1.04);
+        g.gain.setValueAtTime(0.14, t0 + 1.84);
+        g.gain.linearRampToValueAtTime(0, t0 + 1.86);
+        o1.start(t0);
+        o2.start(t0);
+        o3.start(t0);
+        o1.stop(t0 + 2.0);
+        o2.stop(t0 + 2.0);
+        o3.stop(t0 + 2.0);
+      } catch (_) {}
       const statusKeyMap = {
         ricevuto: 'order.status.received',
         preparazione: 'order.status.preparation',
