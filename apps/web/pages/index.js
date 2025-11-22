@@ -14,6 +14,12 @@ export default function Home({ latest = null }) {
         <p>{t('home.hero.hours')}</p>
         <Link className="btn primary" href="/menu">{t('home.hero.browseMenu')}</Link>
       </div>
+      <section style={{ marginTop: 16 }}>
+        <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 8, paddingTop: '56.25%' }}>
+          <img src="/gallery/18.jpeg" alt="Pizza nel forno a legna" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35))' }} />
+        </div>
+      </section>
       {latest && (
         <section style={{ marginTop: 16 }}>
           <div className="news-section">

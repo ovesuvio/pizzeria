@@ -25,7 +25,11 @@ export async function apiPost(path, body, token) {
     },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('Errore richiesta');
+  if (!res.ok) {
+    let msg = 'Errore richiesta';
+    try { const j = await res.json(); msg = j?.error || msg; } catch (_) {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 

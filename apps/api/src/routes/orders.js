@@ -5,11 +5,23 @@ const { notifyOrderStatus } = require('../lib/notify');
 
 module.exports = function(memory, db) {
   const router = express.Router();
+  memory.settings = memory.settings || { orderingDisabled: false, orderingMessage: '' };
 
   router.get('/', auth(true), async (_req, res) => {
     if (db.useMemory) return res.json(memory.orders);
     const orders = await Order.find().sort({ createdAt: -1 });
     res.json(orders);
+  });
+
+  router.get('/status', async (_req, res) => {
+    res.json({ disabled: !!memory.settings.orderingDisabled, message: memory.settings.orderingMessage || '' });
+  });
+
+  router.put('/status', auth(true), async (req, res) => {
+    const { disabled, message } = req.body || {};
+    memory.settings.orderingDisabled = !!disabled;
+    memory.settings.orderingMessage = typeof message === 'string' ? message : '';
+    res.json({ ok: true, disabled: memory.settings.orderingDisabled, message: memory.settings.orderingMessage });
   });
 
   router.get('/me', auth(), async (req, res) => {
@@ -20,6 +32,9 @@ module.exports = function(memory, db) {
   });
 
   router.post('/', auth(), async (req, res) => {
+    if (memory.settings.orderingDisabled) {
+      return res.status(503).json({ error: memory.settings.orderingMessage || 'Al momento non è possibile ordinare' });
+    }
     const { items, total, mode, address, scheduledAt, paymentMethod, mock } = req.body;
     const userId = req.user.userId;
     const order = { _id: 'o_' + Date.now(), userId, items, total, mode, address, scheduledAt, paymentMethod, status: 'ricevuto', createdAt: new Date().toISOString() };

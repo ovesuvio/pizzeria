@@ -23,12 +23,24 @@ export default function CheckoutPage() {
   const [token, setToken] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('token') : null));
   const [mounted, setMounted] = useState(false);
   const { t } = useI18n();
+  const [disabledOrders, setDisabledOrders] = useState(false);
 
   useEffect(() => {
     if (!isOpenNow() && !scheduledAt) {
       setStatus(t('checkout.closed'));
     }
   }, [scheduledAt, t]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/orders-status');
+        const data = res.ok ? await res.json() : { disabled: false, message: '' };
+        setDisabledOrders(!!data.disabled);
+        if (data.disabled) setStatus(data.message || 'Al momento non è possibile ordinare');
+      } catch (_) {}
+    })();
+  }, []);
 
   // Mantieni il token aggiornato se cambia in altre pagine
   useEffect(() => {
@@ -60,7 +72,7 @@ export default function CheckoutPage() {
       clear();
       setStatus(`${t('checkout.orderConfirmedPrefix')}${res.orderId}`);
     } catch (e) {
-      setStatus(t('checkout.loginRequired'));
+      setStatus(e?.message || t('checkout.loginRequired'));
     }
   }
 
@@ -76,7 +88,7 @@ export default function CheckoutPage() {
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('checkout.addressPlaceholder')} />
           <label>{t('checkout.scheduled')}</label>
           <input type="time" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
-          <button className="btn primary" disabled={mounted ? !token : true} onClick={placeOrder}>{t('checkout.place')}</button>
+          <button className="btn primary" disabled={(mounted ? !token : true) || disabledOrders} onClick={placeOrder}>{t('checkout.place')}</button>
         </div>
         <div>
           <div>{t('checkout.payment')}</div>

@@ -11,6 +11,11 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const audioCtxRef = useRef(null);
+  const [ringing, setRinging] = useState(false);
+  const unreadRef = useRef(new Set());
+  const intervalRef = useRef(null);
+  const [disabledOrders, setDisabledOrders] = useState(false);
+  const [disabledMsg, setDisabledMsg] = useState('');
 
   useEffect(() => {
     const t = localStorage.getItem('token');
@@ -23,6 +28,7 @@ export default function AdminOrdersPage() {
     fetchOrders();
     fetchProducts();
     fetchUsers();
+    fetchStatus();
   }, [token]);
 
   useEffect(() => {
@@ -37,15 +43,34 @@ export default function AdminOrdersPage() {
             audioCtxRef.current = ctx;
           }
           if (ctx.resume) ctx.resume();
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.type = 'sine';
-          o.frequency.value = 880;
-          g.gain.value = 0.08;
-          o.connect(g);
-          g.connect(ctx.destination);
-          o.start();
-          setTimeout(() => { try { o.stop(); } catch (_) {} }, 400);
+          const play = () => {
+            const o1 = ctx.createOscillator();
+            const o2 = ctx.createOscillator();
+            const g = ctx.createGain();
+            o1.type = 'sine';
+            o2.type = 'sine';
+            o1.frequency.value = 440;
+            o2.frequency.value = 480;
+            o1.connect(g);
+            o2.connect(g);
+            g.connect(ctx.destination);
+            const t = ctx.currentTime;
+            g.gain.setValueAtTime(0, t);
+            g.gain.linearRampToValueAtTime(0.14, t + 0.02);
+            g.gain.setValueAtTime(0.14, t + 0.8);
+            g.gain.linearRampToValueAtTime(0, t + 0.82);
+            g.gain.setValueAtTime(0, t + 1.02);
+            g.gain.linearRampToValueAtTime(0.14, t + 1.04);
+            g.gain.setValueAtTime(0.14, t + 1.84);
+            g.gain.linearRampToValueAtTime(0, t + 1.86);
+            o1.start(t);
+            o2.start(t);
+            o1.stop(t + 2.0);
+            o2.stop(t + 2.0);
+          };
+          play();
+          unreadRef.current.add(evt.orderId);
+          setRinging(true);
         } catch (_) {}
       }
       fetchOrders();
@@ -53,6 +78,59 @@ export default function AdminOrdersPage() {
     socket.on('order_update', handler);
     return () => socket.disconnect();
   }, [token, soundEnabled]);
+
+  useEffect(() => {
+    if (!ringing || !soundEnabled) return;
+    const ctx = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
+    audioCtxRef.current = ctx;
+    if (ctx.resume) ctx.resume();
+    const tick = () => {
+      if (!unreadRef.current.size) return;
+      const t0 = ctx.currentTime;
+      const mk = (f) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = f;
+        o.connect(g);
+        g.connect(ctx.destination);
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.12, t0 + 0.02);
+        g.gain.setValueAtTime(0.12, t0 + 0.9);
+        g.gain.linearRampToValueAtTime(0, t0 + 0.92);
+        o.start(t0);
+        o.stop(t0 + 1.5);
+      };
+      mk(440);
+      mk(480);
+    };
+    intervalRef.current = setInterval(() => {
+      if (!unreadRef.current.size) return;
+      tick();
+    }, 5000);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [ringing, soundEnabled]);
+
+  useEffect(() => {
+    if (!ringing) return;
+    const stop = () => {
+      unreadRef.current.clear();
+      setRinging(false);
+    };
+    window.addEventListener('click', stop);
+    window.addEventListener('keydown', stop);
+    window.addEventListener('focus', stop);
+    return () => {
+      window.removeEventListener('click', stop);
+      window.removeEventListener('keydown', stop);
+      window.removeEventListener('focus', stop);
+    };
+  }, [ringing]);
 
   async function fetchOrders() {
     try {
@@ -103,11 +181,33 @@ export default function AdminOrdersPage() {
 
   async function deleteOrder(id) {
     try {
+      if (typeof window !== 'undefined') {
+        const ok = window.confirm('Sei sicuro di voler eliminare questo ordine?');
+        if (!ok) return;
+      }
       await apiDelete(`/orders/${id}`, token);
       setMsg('Ordine eliminato');
       fetchOrders();
     } catch (e) {
       setMsg('Errore eliminazione ordine');
+    }
+  }
+
+  async function fetchStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/orders/status`);
+      const data = res.ok ? await res.json() : { disabled: false, message: '' };
+      setDisabledOrders(!!data.disabled);
+      setDisabledMsg(data.message || '');
+    } catch (_) {}
+  }
+
+  async function updateStatusConfig() {
+    try {
+      await apiPut('/orders/status', { disabled: disabledOrders, message: disabledMsg }, token);
+      setMsg('Configurazione aggiornata');
+    } catch (_) {
+      setMsg('Errore aggiornamento configurazione');
     }
   }
 
@@ -126,6 +226,11 @@ export default function AdminOrdersPage() {
         <label style={{ marginLeft: 12 }}>
           <input type="checkbox" checked={soundEnabled} onChange={(e) => setSoundEnabled(e.target.checked)} /> Suono allerta
         </label>
+        <label style={{ marginLeft: 12 }}>
+          <input type="checkbox" checked={disabledOrders} onChange={(e) => setDisabledOrders(e.target.checked)} /> Blocca ordini
+        </label>
+        <input style={{ minWidth: 220 }} placeholder="Messaggio chiusura" value={disabledMsg} onChange={(e) => setDisabledMsg(e.target.value)} />
+        <button className="btn" onClick={updateStatusConfig}>Salva</button>
       </div>
       {msg && <div className="status">{msg}</div>}
       <div className="orders">
@@ -189,7 +294,7 @@ export default function AdminOrdersPage() {
                     <button className="btn" onClick={() => updateStatus(o._id, 'preparazione')}>In preparazione</button>
                     <button className="btn" onClick={() => updateStatus(o._id, 'consegna')}>In consegna</button>
                     <button className="btn" onClick={() => updateStatus(o._id, 'consegnato')}>Consegnato</button>
-                    {o.status === 'ricevuto' && (
+                    {o.status !== 'consegnato' && (
                       <button className="btn" onClick={() => deleteOrder(o._id)}>Elimina</button>
                     )}
                   </div>
