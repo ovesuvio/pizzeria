@@ -93,7 +93,7 @@ export default function CheckoutPage() {
         <div>
           <div>{t('checkout.payment')}</div>
           <label><input type="radio" checked={payment==='stripe'} onChange={() => setPayment('stripe')} /> {t('checkout.payStripe')}</label>
-          <label><input type="radio" checked={payment==='paypal'} onChange={() => setPayment('paypal')} /> {t('checkout.payPaypal')}</label>
+          <label><input type="radio" checked={payment==='visa'} onChange={() => setPayment('visa')} /> {t('checkout.payVisa') || 'Visa'}</label>
           <label><input type="radio" checked={payment==='cash'} onChange={() => setPayment('cash')} /> {t('checkout.payCash')}</label>
         </div>
       </div>

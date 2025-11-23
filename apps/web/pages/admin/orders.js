@@ -256,8 +256,8 @@ export default function AdminOrdersPage() {
               {groupMap[day].map((o) => {
                 const prodMap = Object.fromEntries((products || []).map((p) => [p._id, p]));
                 const userMap = Object.fromEntries((users || []).map((u) => [u._id, u]));
-                const customer = userMap[o.userId];
-                const payLabelMap = { stripe: 'Carta (Stripe)', paypal: 'PayPal', cash: 'Contanti' };
+          const customer = userMap[o.userId];
+          const payLabelMap = { stripe: 'Carta (Stripe)', visa: 'Visa', paypal: 'PayPal', cash: 'Contanti' };
                 return (
                 <div key={o._id} className="order admin">
                   <div>#{o._id.slice(-6)} • {new Date(o.createdAt).toLocaleString()}</div>
