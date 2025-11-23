@@ -23,12 +23,17 @@ export default function MenuPage({ initialCategories = null, initialProducts = n
   }, {});
 
   const allowed = ['Pizza', 'Pasta', 'Insalate'];
-  const filteredCats = useMemo(() => {
+  const namedCats = useMemo(() => {
     const list = Array.isArray(categories) ? categories : [];
-    return list.filter((c) => allowed.includes(c.name));
+    const map = {};
+    allowed.forEach((name) => {
+      const cat = list.find((c) => String(c.name || '').toLowerCase().includes(name.toLowerCase()));
+      if (cat) map[name] = cat;
+    });
+    return map;
   }, [categories]);
 
-  const activeCat = filteredCats.find((c) => c.name === active) || filteredCats[0];
+  const activeCat = namedCats[active];
 
   return (
     <div>
