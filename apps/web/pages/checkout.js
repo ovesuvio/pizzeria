@@ -18,12 +18,17 @@ function isOpenNow(date = new Date()) {
 export default function CheckoutPage() {
   const { items, total, mode, address, setAddress, clear } = useCart();
   const [scheduledAt, setScheduledAt] = useState('');
-  const [payment, setPayment] = useState('cash'); // 'stripe' | 'paypal' | 'cash'
+  const [payment, setPayment] = useState('cash');
   const [status, setStatus] = useState('');
   const [token, setToken] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('token') : null));
   const [mounted, setMounted] = useState(false);
   const { t } = useI18n();
   const [disabledOrders, setDisabledOrders] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [custFirst, setCustFirst] = useState('');
+  const [custLast, setCustLast] = useState('');
+  const [custPhone, setCustPhone] = useState('');
+  const [custEmail, setCustEmail] = useState('');
 
   useEffect(() => {
     if (!isOpenNow() && !scheduledAt) {
@@ -50,6 +55,15 @@ export default function CheckoutPage() {
       window.addEventListener('storage', handle);
       // Leggi subito il token presente in localStorage
       handle();
+      try {
+        const t = localStorage.getItem('token');
+        if (t) {
+          const p = JSON.parse(atob(t.split('.')[1]));
+          setIsAdmin(!!p?.isAdmin);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (_) { setIsAdmin(false); }
     }
     return () => {
       if (typeof window !== 'undefined') {
@@ -67,6 +81,7 @@ export default function CheckoutPage() {
         address,
         scheduledAt,
         paymentMethod: payment,
+        customer: isAdmin ? { firstName: custFirst, lastName: custLast, phone: custPhone, email: custEmail } : undefined,
         mock: true,
       }, token);
       clear();
@@ -86,6 +101,17 @@ export default function CheckoutPage() {
         <div>
           <label>{t('checkout.address')}</label>
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t('checkout.addressPlaceholder')} />
+          {isAdmin && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Dati cliente (telefono)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <input value={custFirst} onChange={(e) => setCustFirst(e.target.value)} placeholder="Nome" />
+                <input value={custLast} onChange={(e) => setCustLast(e.target.value)} placeholder="Cognome" />
+              </div>
+              <input style={{ marginTop: 8 }} value={custPhone} onChange={(e) => setCustPhone(e.target.value)} placeholder="Telefono" />
+              <input style={{ marginTop: 8 }} value={custEmail} onChange={(e) => setCustEmail(e.target.value)} placeholder="Email (opzionale)" />
+            </div>
+          )}
           <label>{t('checkout.scheduled')}</label>
           <input type="time" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
           <button className="btn primary" disabled={(mounted ? !token : true) || disabledOrders} onClick={placeOrder}>{t('checkout.place')}</button>

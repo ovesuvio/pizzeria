@@ -264,7 +264,11 @@ export default function AdminOrdersPage() {
                   <div>Totale: € {o.total.toFixed(2)}</div>
                   <div>Stato: {o.status}</div>
                   <div>Pagamento: {payLabelMap[o.paymentMethod] || o.paymentMethod || '-'}</div>
-                  <div>Cliente: {customer ? (customer.email || customer.phone || customer._id) : o.userId}</div>
+            <div>
+              Cliente: {o.customerFirstName || o.customerLastName ? `${o.customerFirstName || ''} ${o.customerLastName || ''}`.trim() : (customer ? (customer.email || customer.phone || customer._id) : o.userId)}
+              {o.customerPhone ? ` • ${o.customerPhone}` : ''}
+              {o.customerEmail ? ` • ${o.customerEmail}` : ''}
+            </div>
                   {o.address && <div>Indirizzo: {o.address}</div>}
                   {(() => {
                     const sched = o.scheduledAt;

@@ -2,6 +2,7 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 const User = require('../models/user');
+const Order = require('../models/order');
 
 async function getUserEmail(memory, db, userId) {
   if (db.useMemory) {
@@ -14,6 +15,24 @@ async function getUserEmail(memory, db, userId) {
   } catch (_) {
     return null;
   }
+}
+
+async function getRecipientEmail(memory, db, userId, orderId) {
+  if (db.useMemory) {
+    const o = (memory.orders || []).find((x) => x._id === orderId);
+    if (o?.customerEmail) return o.customerEmail;
+    if (userId) {
+      const u = (memory.users || []).find((x) => x._id === userId);
+      return u?.email || null;
+    }
+    return null;
+  }
+  try {
+    const o = await Order.findById(orderId);
+    if (o?.customerEmail) return o.customerEmail;
+  } catch (_) {}
+  if (userId) return await getUserEmail(memory, db, userId);
+  return null;
 }
 
 function sendWebhook(urlStr, payload) {
@@ -56,7 +75,7 @@ async function notifyOrderStatus(memory, db, { userId, orderId, status }) {
   const webhook = process.env.MAIL_WEBHOOK_URL;
   const from = process.env.MAIL_FROM || 'no-reply@ovesuvio.com';
   if (!webhook) return;
-  const email = await getUserEmail(memory, db, userId);
+  const email = await getRecipientEmail(memory, db, userId, orderId);
   if (!email) return;
   const label = statusLabels[status] || `Stato aggiornato: ${status}`;
   const subject = `Aggiornamento ordine #${String(orderId).slice(-6)}`;

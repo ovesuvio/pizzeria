@@ -35,9 +35,15 @@ module.exports = function(memory, db) {
     if (memory.settings.orderingDisabled) {
       return res.status(503).json({ error: memory.settings.orderingMessage || 'Al momento non è possibile ordinare' });
     }
-    const { items, total, mode, address, scheduledAt, paymentMethod, mock } = req.body;
+    const { items, total, mode, address, scheduledAt, paymentMethod, mock, customer } = req.body;
     const userId = req.user.userId;
     const order = { _id: 'o_' + Date.now(), userId, items, total, mode, address, scheduledAt, paymentMethod, status: 'ricevuto', createdAt: new Date().toISOString() };
+    if (customer && typeof customer === 'object') {
+      order.customerFirstName = customer.firstName || '';
+      order.customerLastName = customer.lastName || '';
+      order.customerPhone = customer.phone || '';
+      order.customerEmail = customer.email || '';
+    }
     if (db.useMemory) {
       memory.orders.unshift(order);
       // Mock pagamento ok
