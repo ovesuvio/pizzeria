@@ -153,41 +153,59 @@ export default function AdminProductsPage() {
       </div>
 
       <div className="products">
-        {filteredProducts.map((p) => (
-          <div key={p._id} className="product admin" style={{ border: '1px solid #ddd', padding: 12, marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input style={{ minWidth: 200 }} value={p.name || ''} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, name: e.target.value } : x))} />
-              <input style={{ minWidth: 240 }} placeholder="Immagine (URL)" value={p.photoUrl || ''} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, photoUrl: e.target.value } : x))} />
-              <textarea style={{ minWidth: 260 }} placeholder="Descrizione" value={p.description || ''} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, description: e.target.value } : x))} />
-              <input style={{ width: 120 }} type="number" step="0.01" value={p.price || 0} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, price: e.target.value } : x))} />
-              <select value={p.categoryId || ''} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, categoryId: e.target.value } : x))}>
-                <option value="">Categoria</option>
-                {(Array.isArray(categories) ? categories : []).map((c) => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
+        {(() => {
+          const map = filteredProducts.reduce((acc, p) => {
+            (acc[p.categoryId] = acc[p.categoryId] || []).push(p);
+            return acc;
+          }, {});
+          const order = (Array.isArray(categories) ? categories.map((c) => c._id) : []);
+          const catIds = (filterCat ? [filterCat] : Object.keys(map)).sort((a, b) => (order.indexOf(a) - order.indexOf(b)));
+          return catIds.map((catId) => {
+            const list = map[catId] || [];
+            if (!list.length) return null;
+            const catName = (Array.isArray(categories) ? categories.find((c) => c._id === catId)?.name : null) || '—';
+            return (
+              <section key={catId} className="category" style={{ marginTop: 16 }}>
+                <h3>{catName}</h3>
+                {list.map((p) => (
+                  <div key={p._id} className="product admin" style={{ border: '1px solid #ddd', padding: 12, marginBottom: 12 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input style={{ minWidth: 200 }} value={p.name || ''} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, name: e.target.value } : x))} />
+                      <input style={{ minWidth: 240 }} placeholder="Immagine (URL)" value={p.photoUrl || ''} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, photoUrl: e.target.value } : x))} />
+                      <textarea style={{ minWidth: 260 }} placeholder="Descrizione" value={p.description || ''} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, description: e.target.value } : x))} />
+                      <input style={{ width: 120 }} type="number" step="0.01" value={p.price || 0} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, price: e.target.value } : x))} />
+                      <select value={p.categoryId || ''} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, categoryId: e.target.value } : x))}>
+                        <option value="">Categoria</option>
+                        {(Array.isArray(categories) ? categories : []).map((c) => (
+                          <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                      </select>
+                      <input style={{ minWidth: 160 }} placeholder="Sottocategoria" value={p.subcategory || ''} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, subcategory: e.target.value } : x))} />
+                      <input style={{ minWidth: 240 }} placeholder="Ingredienti (comma)" value={(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : (p.ingredients || ''))} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, ingredients: e.target.value } : x))} />
+                      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <input type="checkbox" checked={!!p.available} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, available: e.target.checked } : x))} /> Disponibile
+                      </label>
+                      <button className="btn" onClick={() => saveProduct(p)}>Salva</button>
+                      <button className="btn" onClick={() => removeProduct(p._id)}>Elimina</button>
+                    </div>
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>Extra</div>
+                      {(Array.isArray(p.extras) ? p.extras : []).map((ex, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                          <input placeholder="Nome extra" value={ex.name || ''} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, extras: (Array.isArray(x.extras) ? x.extras : []).map((e2, i) => i === idx ? { ...e2, name: e.target.value } : e2) } : x))} />
+                          <input placeholder="Prezzo" type="number" step="0.01" value={ex.price || 0} onChange={(e) => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, extras: (Array.isArray(x.extras) ? x.extras : []).map((e2, i) => i === idx ? { ...e2, price: e.target.value } : e2) } : x))} />
+                          <button className="btn" onClick={() => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, extras: (Array.isArray(x.extras) ? x.extras : []).filter((_, i) => i !== idx) } : x))}>Rimuovi</button>
+                        </div>
+                      ))}
+                      <button className="btn" onClick={() => setProducts((l) => l.map((x) => x._id === p._id ? { ...x, extras: [...(Array.isArray(x.extras) ? x.extras : []), { name: '', price: 0 }] } : x))}>Aggiungi extra</button>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#666' }}>Categoria: {categories.find((c) => c._id === p.categoryId)?.name || '—'}{p.subcategory ? ` • ${p.subcategory}` : ''}</div>
+                  </div>
                 ))}
-              </select>
-              <input style={{ minWidth: 160 }} placeholder="Sottocategoria" value={p.subcategory || ''} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, subcategory: e.target.value } : x))} />
-              <input style={{ minWidth: 240 }} placeholder="Ingredienti (comma)" value={(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : (p.ingredients || ''))} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, ingredients: e.target.value } : x))} />
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <input type="checkbox" checked={!!p.available} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, available: e.target.checked } : x))} /> Disponibile
-              </label>
-              <button className="btn" onClick={() => saveProduct(p)}>Salva</button>
-              <button className="btn" onClick={() => removeProduct(p._id)}>Elimina</button>
-            </div>
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>Extra</div>
-              {(Array.isArray(p.extras) ? p.extras : []).map((ex, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-                  <input placeholder="Nome extra" value={ex.name || ''} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, extras: (Array.isArray(x.extras) ? x.extras : []).map((e2, i) => i === idx ? { ...e2, name: e.target.value } : e2) } : x))} />
-                  <input placeholder="Prezzo" type="number" step="0.01" value={ex.price || 0} onChange={(e) => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, extras: (Array.isArray(x.extras) ? x.extras : []).map((e2, i) => i === idx ? { ...e2, price: e.target.value } : e2) } : x))} />
-                  <button className="btn" onClick={() => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, extras: (Array.isArray(x.extras) ? x.extras : []).filter((_, i) => i !== idx) } : x))}>Rimuovi</button>
-                </div>
-              ))}
-              <button className="btn" onClick={() => setProducts((list) => list.map((x) => x._id === p._id ? { ...x, extras: [...(Array.isArray(x.extras) ? x.extras : []), { name: '', price: 0 }] } : x))}>Aggiungi extra</button>
-            </div>
-            <div style={{ fontSize: 12, color: '#666' }}>Categoria: {categories.find((c) => c._id === p.categoryId)?.name || '—'}{p.subcategory ? ` • ${p.subcategory}` : ''}</div>
-          </div>
-        ))}
+              </section>
+            );
+          });
+        })()}
       </div>
     </div>
   );

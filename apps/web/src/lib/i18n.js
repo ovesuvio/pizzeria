@@ -27,7 +27,8 @@ const messages = {
         email: 'Email',
         phone: 'Telefono',
         address: 'Indirizzo',
-        password: 'Password'
+        password: 'Password',
+        privacyConsent: 'Accetto l’informativa privacy'
       },
       forgot: {
         toggle: 'Password dimenticata?',
@@ -159,7 +160,8 @@ const messages = {
         email: 'E-Mail',
         phone: 'Telefon',
         address: 'Adresse',
-        password: 'Passwort'
+        password: 'Passwort',
+        privacyConsent: 'Ich akzeptiere die Datenschutzerklärung'
       },
       forgot: {
         toggle: 'Passwort vergessen?',
@@ -291,7 +293,8 @@ const messages = {
         email: 'Email',
         phone: 'Phone',
         address: 'Address',
-        password: 'Password'
+        password: 'Password',
+        privacyConsent: 'I accept the privacy policy'
       },
       forgot: {
         toggle: 'Forgot password?',

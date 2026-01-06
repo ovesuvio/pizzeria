@@ -7,20 +7,21 @@ module.exports = function(memory, db) {
   const router = express.Router();
 
   router.post('/register', async (req, res) => {
-    const { firstName, lastName, email, phone, address, password } = req.body;
+    const { firstName, lastName, email, phone, address, password, privacyConsent, privacyPolicyVersion } = req.body;
     if (!firstName || !lastName || !phone || !address) {
       return res.status(400).json({ error: 'Nome, cognome, telefono e indirizzo sono obbligatori' });
     }
     if (!email || !password) return res.status(400).json({ error: 'Email e password richieste' });
+    if (!privacyConsent) return res.status(400).json({ error: 'Consenso privacy richiesto' });
     const hash = await bcrypt.hash(password, 10);
     if (db.useMemory) {
       if (memory.users.find(u => u.email === email)) return res.status(409).json({ error: 'Utente esistente' });
-      const user = { _id: 'u_' + Date.now(), firstName, lastName, email, phone, address, passwordHash: hash, isAdmin: false };
+      const user = { _id: 'u_' + Date.now(), firstName, lastName, email, phone, address, passwordHash: hash, isAdmin: false, privacyConsent: true, privacyConsentAt: new Date().toISOString(), privacyPolicyVersion: privacyPolicyVersion || process.env.PRIVACY_VERSION || 'v1' };
       memory.users.push(user);
       return res.json({ ok: true });
     } else {
       try {
-        await User.create({ firstName, lastName, email, phone, address, passwordHash: hash });
+        await User.create({ firstName, lastName, email, phone, address, passwordHash: hash, privacyConsent: true, privacyConsentAt: new Date(), privacyPolicyVersion: privacyPolicyVersion || process.env.PRIVACY_VERSION || 'v1' });
         return res.json({ ok: true });
       } catch (e) {
         return res.status(400).json({ error: e.message });

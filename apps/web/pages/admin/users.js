@@ -68,6 +68,7 @@ export default function AdminUsersPage() {
           <div key={u._id} className="user admin" style={{ border: '1px solid #ddd', padding: 12, marginBottom: 12 }}>
             <div><strong>{u.firstName} {u.lastName}</strong> — {u.email}</div>
             <div>Telefono: {u.phone || '—'} • Indirizzo: {u.address || '—'}</div>
+            <div>Consenso privacy: {u.privacyConsent ? 'sì' : 'no'}{u.privacyConsentAt ? ` • ${new Date(u.privacyConsentAt).toLocaleString()}` : ''}</div>
             <div>Ordini effettuati: {ordersByUser[u._id]?.length || 0}</div>
           </div>
         ))}

@@ -8,6 +8,9 @@ const UserSchema = new mongoose.Schema({
   address: String,
   passwordHash: String,
   isAdmin: { type: Boolean, default: false },
+  privacyConsent: { type: Boolean, default: false },
+  privacyConsentAt: Date,
+  privacyPolicyVersion: String,
 });
 
 module.exports = mongoose.models.User || mongoose.model('User', UserSchema);

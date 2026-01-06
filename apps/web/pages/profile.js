@@ -15,6 +15,7 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
+  const [privacyConsent, setPrivacyConsent] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -68,7 +69,11 @@ export default function ProfilePage() {
 
   async function register() {
     try {
-      const res = await apiPost('/auth/register', { firstName, lastName, email, phone, address, password });
+      if (!privacyConsent) {
+        setMsg(t('profile.messages.registrationError'));
+        return;
+      }
+      const res = await apiPost('/auth/register', { firstName, lastName, email, phone, address, password, privacyConsent: true, privacyPolicyVersion: process.env.NEXT_PUBLIC_PRIVACY_VERSION || 'v1' });
       setMsg(t('profile.messages.registrationSuccess'));
     } catch (e) {
       setMsg(t('profile.messages.registrationError'));
@@ -181,8 +186,13 @@ export default function ProfilePage() {
           <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="via e numero, città" />
           <label>{t('profile.fields.password')}</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" />
+          <div style={{ marginTop: 8 }}>
+            <label>
+              <input type="checkbox" checked={privacyConsent} onChange={(e) => setPrivacyConsent(e.target.checked)} /> {t('profile.fields.privacyConsent')}
+            </label>
+          </div>
           <div className="actions">
-            <button className="btn" onClick={register}>{t('profile.register.button')}</button>
+            <button className="btn" onClick={register} disabled={!privacyConsent}>{t('profile.register.button')}</button>
           </div>
         </div>
       )}
