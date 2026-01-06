@@ -12,13 +12,13 @@ module.exports = function(memory, db) {
   });
 
   router.post('/', auth(true), async (req, res) => {
-    const { name, description, price, categoryId, photoUrl, available, ingredients, extras } = req.body;
+    const { name, description, price, categoryId, subcategory, photoUrl, available, ingredients, extras } = req.body;
     if (db.useMemory) {
-      const p = { _id: 'p_' + Date.now(), name, description, price, categoryId, photoUrl, available: available ?? true, ingredients: ingredients || [], extras: extras || [] };
+      const p = { _id: 'p_' + Date.now(), name, description, price, categoryId, subcategory, photoUrl, available: available ?? true, ingredients: ingredients || [], extras: extras || [] };
       memory.products.push(p);
       return res.json(p);
     }
-    const p = await Product.create({ name, description, price, categoryId, photoUrl, available, ingredients, extras });
+    const p = await Product.create({ name, description, price, categoryId, subcategory, photoUrl, available, ingredients, extras });
     res.json(p);
   });
 

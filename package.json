@@ -1,0 +1,15 @@
+{
+  "name": "o-vesuvio",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*", "tests/*"],
+  "scripts": {
+    "dev": "concurrently \"npm --prefix apps/api run dev\" \"npm --prefix apps/web run dev\"",
+    "build": "npm --prefix apps/api run build && npm --prefix apps/web run build",
+    "start": "npm --prefix apps/api run start && npm --prefix apps/web run start",
+    "e2e": "npm --prefix tests/e2e run test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

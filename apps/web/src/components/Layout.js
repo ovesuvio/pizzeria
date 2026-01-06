@@ -15,6 +15,8 @@ export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { items, total } = useCart();
   const audioCtxRef = useRef(null);
+  const [orderingSuspended, setOrderingSuspended] = useState(false);
+  const [orderingUntil, setOrderingUntil] = useState(0);
   const cartCount = Array.isArray(items) ? items.reduce((sum, i) => sum + (i.quantity || 0), 0) : 0;
   const localeMap = { it: 'it-IT', de: 'de-DE', en: 'en-GB' };
   const cartTotalFmt = new Intl.NumberFormat(localeMap[lang] || 'it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(total || 0);
@@ -108,6 +110,19 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/orders-status');
+        const data = r.ok ? await r.json() : { disabled: false, disabled_until: 0 };
+        const now = Date.now();
+        const until = Number(data.disabled_until || 0);
+        setOrderingSuspended(!!data.disabled || (until > now));
+        setOrderingUntil(until);
+      } catch (_) {}
+    })();
+  }, []);
+
+  useEffect(() => {
     const closeMenu = () => setMenuOpen(false);
     router.events.on('routeChangeStart', closeMenu);
     router.events.on('routeChangeComplete', closeMenu);
@@ -161,6 +176,11 @@ export default function Layout({ children }) {
               <span className="cart-icon">🛒</span>
               <span className="cart-label">{t('nav.cart')}</span>
             </Link>
+            {isAdmin && (
+              <Link href="/admin" className="nav-primary admin-link mobile-only" style={{ marginLeft: 8 }}>
+                <span className="admin-icon">🛠️</span>
+              </Link>
+            )}
             {!logged && (
               <Link href="/profile" aria-label={t('nav.login')} className="nav-primary login-link mobile-only" style={{ marginLeft: 8 }}>
                 <span className="login-icon">👤</span>
@@ -168,12 +188,16 @@ export default function Layout({ children }) {
             )}
           </div>
           <div className="nav-links">
+            {isAdmin && (
+              <Link href="/admin" className="nav-admin" style={{ marginRight: 8, background: 'var(--orange)', color: '#000', padding: '4px 8px', borderRadius: 4 }}>
+                {t('nav.admin')}
+              </Link>
+            )}
             <Link href="/">{t('nav.home')}</Link>
             <Link href="/menu">{t('nav.menu')}</Link>
             <Link href="/news">{t('nav.news')}</Link>
             <Link href="/orders">{t('nav.orders')}</Link>
             <Link href="/gallery">{t('nav.gallery')}</Link>
-            {isAdmin && <Link href="/admin">{t('nav.admin')}</Link>}
             <select
               aria-label={t('nav.language')}
               value={lang}
@@ -197,6 +221,27 @@ export default function Layout({ children }) {
           </div>
       </nav>
       </header>
+      {orderingSuspended && (
+        <div style={{ background: 'var(--orange)', color: '#000', padding: 8, textAlign: 'center', fontWeight: 600 }}>
+          {t('global.orderingSuspended')}
+          {orderingUntil > Date.now() && (() => {
+            const diff = orderingUntil - Date.now();
+            const mins = Math.round(diff / 60000);
+            const hours = Math.round(diff / 3600000);
+            const days = Math.round(diff / 86400000);
+            const weeks = Math.round(diff / (7 * 86400000));
+            const months = Math.round(diff / (30 * 86400000));
+            let val = 0, unitSing = '', unitPlur = '';
+            if (months >= 1) { val = months; unitSing = t('global.time.month'); unitPlur = t('global.time.months'); }
+            else if (weeks >= 1) { val = weeks; unitSing = t('global.time.week'); unitPlur = t('global.time.weeks'); }
+            else if (days >= 1) { val = days; unitSing = t('global.time.day'); unitPlur = t('global.time.days'); }
+            else if (hours >= 1) { val = hours; unitSing = t('global.time.hour'); unitPlur = t('global.time.hours'); }
+            else { val = Math.max(mins, 1); unitSing = t('global.time.minute'); unitPlur = t('global.time.minutes'); }
+            const unit = val === 1 ? unitSing : unitPlur;
+            return ` • ${t('global.resumeInPrefix')} ${val} ${unit}`;
+          })()}
+        </div>
+      )}
       {toast && (
         <div className="toast" role="status">{toast}</div>
       )}

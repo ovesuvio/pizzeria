@@ -5,7 +5,7 @@ const { notifyOrderStatus } = require('../lib/notify');
 
 module.exports = function(memory, db) {
   const router = express.Router();
-  memory.settings = memory.settings || { orderingDisabled: false, orderingMessage: '' };
+  memory.settings = memory.settings || { orderingDisabled: false, orderingMessage: '', orderingDisabledUntil: 0 };
 
   router.get('/', auth(true), async (_req, res) => {
     if (db.useMemory) return res.json(memory.orders);
@@ -14,14 +14,24 @@ module.exports = function(memory, db) {
   });
 
   router.get('/status', async (_req, res) => {
-    res.json({ disabled: !!memory.settings.orderingDisabled, message: memory.settings.orderingMessage || '' });
+    const until = Number(memory.settings.orderingDisabledUntil || 0);
+    const now = Date.now();
+    const disabled = !!memory.settings.orderingDisabled || (until && now < until);
+    res.json({ disabled, message: memory.settings.orderingMessage || '', disabled_until: until || 0 });
   });
 
   router.put('/status', auth(true), async (req, res) => {
-    const { disabled, message } = req.body || {};
+    const { disabled, message, duration } = req.body || {};
+    const now = Date.now();
     memory.settings.orderingDisabled = !!disabled;
     memory.settings.orderingMessage = typeof message === 'string' ? message : '';
-    res.json({ ok: true, disabled: memory.settings.orderingDisabled, message: memory.settings.orderingMessage });
+    const map = { '2h': 2 * 3600e3, '5h': 5 * 3600e3, '1d': 24 * 3600e3, '3d': 3 * 24 * 3600e3, '1w': 7 * 24 * 3600e3, '1m': 30 * 24 * 3600e3 };
+    if (memory.settings.orderingDisabled && duration && map[duration]) {
+      memory.settings.orderingDisabledUntil = now + map[duration];
+    } else if (!memory.settings.orderingDisabled) {
+      memory.settings.orderingDisabledUntil = 0;
+    }
+    res.json({ ok: true, disabled: !!memory.settings.orderingDisabled, message: memory.settings.orderingMessage, disabled_until: Number(memory.settings.orderingDisabledUntil || 0) });
   });
 
   router.get('/me', auth(), async (req, res) => {
@@ -32,7 +42,9 @@ module.exports = function(memory, db) {
   });
 
   router.post('/', auth(), async (req, res) => {
-    if (memory.settings.orderingDisabled) {
+    const until = Number(memory.settings.orderingDisabledUntil || 0);
+    const now = Date.now();
+    if (memory.settings.orderingDisabled || (until && now < until)) {
       return res.status(503).json({ error: memory.settings.orderingMessage || 'Al momento non è possibile ordinare' });
     }
     const { items, total, mode, address, scheduledAt, paymentMethod, mock, customer } = req.body;

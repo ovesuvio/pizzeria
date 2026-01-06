@@ -16,6 +16,8 @@ export default function AdminOrdersPage() {
   const intervalRef = useRef(null);
   const [disabledOrders, setDisabledOrders] = useState(false);
   const [disabledMsg, setDisabledMsg] = useState('');
+  const [disabledDuration, setDisabledDuration] = useState('');
+  const [disabledUntil, setDisabledUntil] = useState(0);
 
   useEffect(() => {
     const t = localStorage.getItem('token');
@@ -203,19 +205,52 @@ export default function AdminOrdersPage() {
   async function fetchStatus() {
     try {
       const res = await fetch(`${API_BASE}/orders/status`);
-      const data = res.ok ? await res.json() : { disabled: false, message: '' };
-      setDisabledOrders(!!data.disabled);
+      const data = res.ok ? await res.json() : { disabled: false, message: '', disabled_until: 0 };
+      const now = Date.now();
+      const until = Number(data.disabled_until || 0);
+      const active = !!data.disabled || (until && now < until);
+      setDisabledOrders(active);
       setDisabledMsg(data.message || '');
+      setDisabledDuration(until && now < until ? inferDuration(until - now) : '');
+      setDisabledUntil(until);
     } catch (_) {}
   }
 
   async function updateStatusConfig() {
     try {
-      await apiPut('/orders/status', { disabled: disabledOrders, message: disabledMsg }, token);
+      await apiPut('/orders/status', { disabled: disabledOrders, message: disabledMsg, duration: disabledDuration }, token);
       setMsg('Configurazione aggiornata');
     } catch (_) {
       setMsg('Errore aggiornamento configurazione');
     }
+  }
+
+  function inferDuration(ms) {
+    const opts = [
+      { key: '2h', ms: 2 * 3600e3 },
+      { key: '5h', ms: 5 * 3600e3 },
+      { key: '1d', ms: 24 * 3600e3 },
+      { key: '3d', ms: 3 * 24 * 3600e3 },
+      { key: '1w', ms: 7 * 24 * 3600e3 },
+      { key: '1m', ms: 30 * 24 * 3600e3 },
+    ];
+    const found = opts.find((o) => Math.abs(o.ms - ms) < 60e3);
+    return found ? found.key : '';
+  }
+
+  function formatRemaining(diff) {
+    const mins = Math.round(diff / 60000);
+    const hours = Math.round(diff / 3600000);
+    const days = Math.round(diff / 86400000);
+    const weeks = Math.round(diff / (7 * 86400000));
+    const months = Math.round(diff / (30 * 86400000));
+    let val = 0, unit = '';
+    if (months >= 1) { val = months; unit = months === 1 ? 'mese' : 'mesi'; }
+    else if (weeks >= 1) { val = weeks; unit = weeks === 1 ? 'settimana' : 'settimane'; }
+    else if (days >= 1) { val = days; unit = days === 1 ? 'giorno' : 'giorni'; }
+    else if (hours >= 1) { val = hours; unit = hours === 1 ? 'ora' : 'ore'; }
+    else { val = Math.max(mins, 1); unit = val === 1 ? 'minuto' : 'minuti'; }
+    return `Rimane: ${val} ${unit}`;
   }
 
   return (
@@ -234,9 +269,27 @@ export default function AdminOrdersPage() {
           <input type="checkbox" checked={soundEnabled} onChange={(e) => setSoundEnabled(e.target.checked)} /> Suono allerta
         </label>
         <label style={{ marginLeft: 12 }}>
-          <input type="checkbox" checked={disabledOrders} onChange={(e) => setDisabledOrders(e.target.checked)} /> Blocca ordini
+          <input type="checkbox" checked={disabledOrders} onChange={(e) => { setDisabledOrders(e.target.checked); if (!e.target.checked) { setDisabledDuration(''); setDisabledUntil(0); } }} /> Blocca ordini
         </label>
         <input style={{ minWidth: 220 }} placeholder="Messaggio chiusura" value={disabledMsg} onChange={(e) => setDisabledMsg(e.target.value)} />
+        {disabledOrders && (
+          <>
+            <select value={disabledDuration} onChange={(e) => setDisabledDuration(e.target.value)} style={{ marginLeft: 8 }}>
+              <option value="">Durata blocco</option>
+              <option value="2h">2 ore</option>
+              <option value="5h">5 ore</option>
+              <option value="1d">1 giorno</option>
+              <option value="3d">3 giorni</option>
+              <option value="1w">1 settimana</option>
+              <option value="1m">1 mese</option>
+            </select>
+            {disabledUntil > Date.now() && (
+              <span style={{ marginLeft: 8, fontSize: 12, color: '#555' }}>
+                {formatRemaining(disabledUntil - Date.now())}
+              </span>
+            )}
+          </>
+        )}
         <button className="btn" onClick={updateStatusConfig}>Salva</button>
       </div>
       {msg && <div className="status">{msg}</div>}

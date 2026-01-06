@@ -128,6 +128,11 @@ const messages = {
         delivery: 'Ordine in consegna',
         delivered: 'Ordine consegnato'
       }
+    },
+    global: {
+      orderingSuspended: 'Servizio di ordinazione momentaneamente sospeso, ci scusiamo per il disagio.',
+      resumeInPrefix: 'Torna tra',
+      time: { minute: 'minuto', minutes: 'minuti', hour: 'ora', hours: 'ore', day: 'giorno', days: 'giorni', week: 'settimana', weeks: 'settimane', month: 'mese', months: 'mesi' }
     }
   },
   de: {
@@ -255,6 +260,11 @@ const messages = {
         delivery: 'Bestellung in Lieferung',
         delivered: 'Bestellung geliefert'
       }
+    },
+    global: {
+      orderingSuspended: 'Online-Bestellungen vorübergehend ausgesetzt, wir entschuldigen uns für die Unannehmlichkeiten.',
+      resumeInPrefix: 'Verfügbar in',
+      time: { minute: 'Minute', minutes: 'Minuten', hour: 'Stunde', hours: 'Stunden', day: 'Tag', days: 'Tage', week: 'Woche', weeks: 'Wochen', month: 'Monat', months: 'Monate' }
     }
   },
   en: {
@@ -382,6 +392,11 @@ const messages = {
         delivery: 'Order out for delivery',
         delivered: 'Order delivered'
       }
+    },
+    global: {
+      orderingSuspended: 'Online ordering temporarily suspended, we apologize for the inconvenience.',
+      resumeInPrefix: 'Available again in',
+      time: { minute: 'minute', minutes: 'minutes', hour: 'hour', hours: 'hours', day: 'day', days: 'days', week: 'week', weeks: 'weeks', month: 'month', months: 'months' }
     }
   }
 };

@@ -127,3 +127,17 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+export async function getServerSideProps() {
+  try {
+    const r = await fetch(`${process.env.NEXT_PUBLIC_SITE_ORIGIN || 'http://localhost:3000'}/api/orders-status`);
+    const data = r.ok ? await r.json() : { disabled: false, disabled_until: 0 };
+    const now = Date.now();
+    if (data.disabled || (Number(data.disabled_until || 0) > now)) {
+      return { redirect: { destination: '/', permanent: false } };
+    }
+    return { props: {} };
+  } catch (_) {
+    return { props: {} };
+  }
+}
