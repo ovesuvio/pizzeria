@@ -8,7 +8,7 @@
 html, body, #__next { height: 100%; }
 body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu; background: var(--cream); color: var(--lava-black); }
 
-.header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--lava-black); color: white; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--lava-black); color: white; transform: translateX(-5cm); }
 .brand { font-weight: 700; letter-spacing: 0.5px; }
 .brand-total { margin-left: 10px; background: var(--vesuvio-orange); color: #111; border-radius: 12px; padding: 2px 8px; font-size: 12px; line-height: 18px; white-space: nowrap; display: inline-block; vertical-align: middle; }
 .header nav a { color: white; margin: 0 8px; text-decoration: none; }
