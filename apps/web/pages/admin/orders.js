@@ -255,6 +255,9 @@ export default function AdminOrdersPage() {
 
   return (
     <div>
+      <div className="admin-back" style={{ marginBottom: 8 }}>
+        <button className="btn" onClick={() => router.push('/admin')}>⬅️ Torna alla Dashboard</button>
+      </div>
       <h2>Admin • Ordini</h2>
       <div className="filters" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <label>Stato:</label>

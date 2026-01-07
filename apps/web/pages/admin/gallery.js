@@ -115,6 +115,9 @@ export default function AdminGalleryPage() {
 
   return (
     <div>
+      <div className="admin-back" style={{ marginBottom: 8 }}>
+        <button className="btn" onClick={() => { window.location.href = '/admin'; }}>⬅️ Torna alla Dashboard</button>
+      </div>
       <h2>Admin • Galleria</h2>
       {msg && <div className="status">{msg}</div>}
       {!isAdmin && <div className="status">Accesso richiesto. Effettua il login admin.</div>}

@@ -61,6 +61,9 @@ export default function AdminUsersPage() {
 
   return (
     <div>
+      <div className="admin-back" style={{ marginBottom: 8 }}>
+        <button className="btn" onClick={() => { window.location.href = '/admin'; }}>⬅️ Torna alla Dashboard</button>
+      </div>
       <h2>Admin • Utenti registrati</h2>
       {msg && <div className="status">{msg}</div>}
       <div className="users">

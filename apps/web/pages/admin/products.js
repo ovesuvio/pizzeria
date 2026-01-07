@@ -109,6 +109,9 @@ export default function AdminProductsPage() {
 
   return (
     <div>
+      <div className="admin-back" style={{ marginBottom: 8 }}>
+        <button className="btn" onClick={() => router.push('/admin')}>⬅️ Torna alla Dashboard</button>
+      </div>
       <h2>Admin • Prodotti in vendita</h2>
       {msg && <div className="status">{msg}</div>}
       <div className="filters" style={{ border: '1px solid #ddd', padding: 12, marginBottom: 12 }}>
