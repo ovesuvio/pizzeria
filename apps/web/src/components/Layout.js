@@ -176,11 +176,9 @@ export default function Layout({ children }) {
               <span className="cart-icon">🛒</span>
               <span className="cart-label">{t('nav.cart')}</span>
             </Link>
-            {isAdmin && (
-              <Link href="/admin" className="nav-primary admin-link mobile-only" style={{ marginLeft: 8 }}>
-                <span className="admin-icon">🛠️</span>
-              </Link>
-            )}
+            <Link href="/admin" className="nav-primary admin-link mobile-only" style={{ marginLeft: 8 }}>
+              <span className="admin-icon">🛠️</span>
+            </Link>
             {!logged && (
               <Link href="/profile" aria-label={t('nav.login')} className="nav-primary login-link mobile-only" style={{ marginLeft: 8 }}>
                 <span className="login-icon">👤</span>
@@ -188,11 +186,9 @@ export default function Layout({ children }) {
             )}
           </div>
           <div className="nav-links">
-            {isAdmin && (
-              <Link href="/admin" className="nav-admin" style={{ marginRight: 8, background: 'var(--orange)', color: '#000', padding: '4px 8px', borderRadius: 4 }}>
-                {t('nav.admin')}
-              </Link>
-            )}
+            <Link href="/admin" className="nav-admin" style={{ marginRight: 8, background: 'var(--orange)', color: '#000', padding: '4px 8px', borderRadius: 4 }}>
+              {t('nav.admin')}
+            </Link>
             <Link href="/">{t('nav.home')}</Link>
             <Link href="/menu">{t('nav.menu')}</Link>
             <Link href="/news">{t('nav.news')}</Link>
