@@ -1,11 +1,12 @@
 const express = require('express');
+const net = require('net');
 const Order = require('../models/order');
 const auth = require('../middleware/auth');
 const { notifyOrderStatus } = require('../lib/notify');
 
 module.exports = function(memory, db) {
   const router = express.Router();
-  memory.settings = memory.settings || { orderingDisabled: false, orderingMessage: '', orderingDisabledUntil: 0 };
+  memory.settings = memory.settings || { orderingDisabled: false, orderingMessage: '', orderingDisabledUntil: 0, printerMode: 'browser', printers: [] };
 
   router.get('/', auth(true), async (_req, res) => {
     if (db.useMemory) return res.json(memory.orders);
@@ -32,6 +33,60 @@ module.exports = function(memory, db) {
       memory.settings.orderingDisabledUntil = 0;
     }
     res.json({ ok: true, disabled: !!memory.settings.orderingDisabled, message: memory.settings.orderingMessage, disabled_until: Number(memory.settings.orderingDisabledUntil || 0) });
+  });
+
+  router.get('/print-config', auth(true), async (_req, res) => {
+    res.json({ mode: memory.settings.printerMode || 'browser', printers: Array.isArray(memory.settings.printers) ? memory.settings.printers : [] });
+  });
+
+  router.put('/print-config', auth(true), async (req, res) => {
+    const { mode, printers } = req.body || {};
+    const m = typeof mode === 'string' && (mode === 'browser' || mode === 'network') ? mode : (memory.settings.printerMode || 'browser');
+    memory.settings.printerMode = m;
+    memory.settings.printers = Array.isArray(printers) ? printers.filter((p) => p && typeof p === 'object') : (memory.settings.printers || []);
+    res.json({ ok: true, mode: memory.settings.printerMode, printers: memory.settings.printers });
+  });
+
+  router.post('/print', auth(true), async (req, res) => {
+    const { order, receipt } = req.body || {};
+    const mode = memory.settings.printerMode || 'browser';
+    if (!order || !order._id) return res.status(400).json({ error: 'Ordine mancante' });
+    if (mode === 'browser') {
+      return res.json({ ok: true, handledBy: 'browser' });
+    }
+    const printers = Array.isArray(memory.settings.printers) ? memory.settings.printers : [];
+    if (!printers.length) return res.status(400).json({ error: 'Nessuna stampante di rete configurata' });
+
+    function buildEscpos(text) {
+      const init = Buffer.from([0x1b, 0x40]);
+      const content = Buffer.from(String(text || '').replace(/\n/g, '\r\n') + '\r\n\r\n');
+      const cut = Buffer.from([0x1d, 0x56, 0x00]);
+      return Buffer.concat([init, content, cut]);
+    }
+
+    const payload = buildEscpos(receipt || (`Ordine #${String(order._id).slice(-6)}\r\n`));
+    const results = [];
+    for (const p of printers) {
+      const host = p.host || 'localhost';
+      const port = Number(p.port || 9100);
+      const name = p.name || '';
+      try {
+        await new Promise((resolve) => {
+          const socket = net.createConnection({ host, port }, () => {
+            try { socket.write(payload); } catch (_) {}
+            try { socket.end(); } catch (_) {}
+          });
+          const done = () => resolve();
+          socket.on('error', done);
+          socket.on('end', done);
+          socket.on('close', done);
+        });
+        results.push({ name, host, port, ok: true });
+      } catch (e) {
+        results.push({ name, host, port, ok: false, error: e?.message });
+      }
+    }
+    res.json({ ok: true, handledBy: 'network', results });
   });
 
   router.get('/me', auth(), async (req, res) => {

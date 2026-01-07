@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { API_BASE, apiPut, apiDelete } from '../../src/lib/api';
+import { API_BASE, apiPut, apiDelete, apiPost } from '../../src/lib/api';
 import { io } from 'socket.io-client';
 import { useRouter } from 'next/router';
 import { getTForLang } from '../../src/lib/i18n';
@@ -22,6 +22,8 @@ export default function AdminOrdersPage() {
   const [disabledDuration, setDisabledDuration] = useState('');
   const [disabledUntil, setDisabledUntil] = useState(0);
   const [printQueue, setPrintQueue] = useState([]);
+  const [printMode, setPrintMode] = useState('browser');
+  const [printers, setPrinters] = useState([]);
 
   useEffect(() => {
     const t = localStorage.getItem('token');
@@ -35,6 +37,7 @@ export default function AdminOrdersPage() {
     fetchProducts();
     fetchUsers();
     fetchStatus();
+    fetchPrintConfig();
   }, [token]);
 
   useEffect(() => {
@@ -241,6 +244,24 @@ export default function AdminOrdersPage() {
     }
   }
 
+  async function fetchPrintConfig() {
+    try {
+      const res = await fetch(`${API_BASE}/orders/print-config`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const data = res.ok ? await res.json() : { mode: 'browser', printers: [] };
+      setPrintMode(data.mode || 'browser');
+      setPrinters(Array.isArray(data.printers) ? data.printers : []);
+    } catch (_) {}
+  }
+
+  async function updatePrintConfig() {
+    try {
+      await apiPut('/orders/print-config', { mode: printMode, printers }, token);
+      setMsg('Configurazione stampa aggiornata');
+    } catch (_) {
+      setMsg('Errore aggiornamento configurazione stampa');
+    }
+  }
+
   function inferDuration(ms) {
     const opts = [
       { key: '2h', ms: 2 * 3600e3 },
@@ -254,7 +275,7 @@ export default function AdminOrdersPage() {
     return found ? found.key : '';
   }
 
-  function printOrder(o) {
+  async function printOrder(o) {
     if (typeof window === 'undefined') return;
     const prodMap = Object.fromEntries((products || []).map((p) => [p._id, p]));
     const tL = getTForLang(o.lang || 'it');
@@ -291,6 +312,29 @@ export default function AdminOrdersPage() {
       <div class="total">${tL('cart.total')}: ${fmt.format(Number(o.total || 0))}</div>
       <div class="sub" style="margin-top:8px">${tL('print.thanks')}</div>
     </div><script>window.focus(); setTimeout(function(){ try{window.print();}catch(e){} try{window.close();}catch(e){} }, 50);</script></body></html>`;
+    if (printMode === 'network') {
+      const linesText = [
+        tL('home.hero.title'),
+        tL('home.hero.address'),
+        `Ordine #${String(o._id).slice(-6)} • ${new Date(o.createdAt).toLocaleString()}`,
+        `${modeLabel}${sched}`,
+        o.address ? `Indirizzo: ${o.address}` : '',
+        `${tL('checkout.payment')}: ${tL(payKeyMap[o.paymentMethod] || '') || (o.paymentMethod || '-')}`,
+        '',
+        tL('print.items'),
+        ...((Array.isArray(o.items) ? o.items : []).map((it) => {
+          const p = prodMap[it.productId];
+          const name = p?.name || it.productId;
+          const extras = (Array.isArray(it.extras) ? it.extras : []).map((e) => `${e.name} +${fmt.format(Number(e.price || 0))}`).join(', ');
+          return `${name} × ${it.quantity}${extras ? ` (${extras})` : ''}`;
+        })),
+        '',
+        `${tL('cart.total')}: ${fmt.format(Number(o.total || 0))}`,
+        tL('print.thanks'),
+      ].filter(Boolean).join('\n');
+      try { await apiPost('/orders/print', { order: { _id: o._id }, receipt: linesText }, token); } catch (_) {}
+      return;
+    }
     const w = window.open('', 'PRINT', 'height=600,width=800');
     if (!w) return;
     w.document.open();
@@ -354,6 +398,25 @@ export default function AdminOrdersPage() {
           </>
         )}
         <button className="btn" onClick={updateStatusConfig}>Salva</button>
+        <div style={{ marginLeft: 12, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <label>Stampa:</label>
+          <select value={printMode} onChange={(e) => setPrintMode(e.target.value)}>
+            <option value="browser">USB/Browser</option>
+            <option value="network">Rete (IPP)</option>
+          </select>
+          {printMode === 'network' && (
+            <input style={{ minWidth: 260 }} placeholder="Stampanti: nome@host:porta (default 9100), separate da ;" value={Array.isArray(printers) ? printers.map((p) => `${p.name || ''}@${p.host || ''}:${p.port || 9100}`).join(';') : ''} onChange={(e) => {
+              const list = String(e.target.value || '').split(';').map((s) => s.trim()).filter(Boolean).map((s) => {
+                const [nameHost, portStr] = s.split(':');
+                const [name, host] = (nameHost || '').split('@');
+                const port = parseInt(portStr || '9100', 10);
+                return { name: name || '', host: host || '', port: isNaN(port) ? 9100 : port };
+              });
+              setPrinters(list);
+            }} />
+          )}
+          <button className="btn" onClick={updatePrintConfig}>Salva stampa</button>
+        </div>
       </div>
       {msg && <div className="status">{msg}</div>}
       <div className="orders">
