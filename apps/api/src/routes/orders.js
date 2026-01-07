@@ -47,9 +47,9 @@ module.exports = function(memory, db) {
     if (memory.settings.orderingDisabled || (until && now < until)) {
       return res.status(503).json({ error: memory.settings.orderingMessage || 'Al momento non è possibile ordinare' });
     }
-    const { items, total, mode, address, scheduledAt, paymentMethod, mock, customer } = req.body;
+    const { items, total, mode, address, scheduledAt, paymentMethod, mock, customer, lang } = req.body;
     const userId = req.user.userId;
-    const order = { _id: 'o_' + Date.now(), userId, items, total, mode, address, scheduledAt, paymentMethod, status: 'ricevuto', createdAt: new Date().toISOString() };
+    const order = { _id: 'o_' + Date.now(), userId, items, total, mode, address, scheduledAt, paymentMethod, status: 'ricevuto', createdAt: new Date().toISOString(), lang: typeof lang === 'string' ? lang : 'it' };
     if (customer && typeof customer === 'object') {
       order.customerFirstName = customer.firstName || '';
       order.customerLastName = customer.lastName || '';

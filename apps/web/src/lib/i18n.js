@@ -135,6 +135,11 @@ const messages = {
       resumeInPrefix: 'Torna tra',
       time: { minute: 'minuto', minutes: 'minuti', hour: 'ora', hours: 'ore', day: 'giorno', days: 'giorni', week: 'settimana', weeks: 'settimane', month: 'mese', months: 'mesi' }
     }
+    ,
+    print: {
+      items: 'Articoli',
+      thanks: 'Grazie per aver scelto noi.'
+    }
   },
   de: {
     nav: {
@@ -267,6 +272,11 @@ const messages = {
       orderingSuspended: 'Online-Bestellungen vorübergehend ausgesetzt, wir entschuldigen uns für die Unannehmlichkeiten.',
       resumeInPrefix: 'Verfügbar in',
       time: { minute: 'Minute', minutes: 'Minuten', hour: 'Stunde', hours: 'Stunden', day: 'Tag', days: 'Tage', week: 'Woche', weeks: 'Wochen', month: 'Monat', months: 'Monate' }
+    }
+    ,
+    print: {
+      items: 'Artikel',
+      thanks: 'Vielen Dank, dass Sie sich für uns entschieden haben.'
     }
   },
   en: {
@@ -401,6 +411,11 @@ const messages = {
       resumeInPrefix: 'Available again in',
       time: { minute: 'minute', minutes: 'minutes', hour: 'hour', hours: 'hours', day: 'day', days: 'days', week: 'week', weeks: 'weeks', month: 'month', months: 'months' }
     }
+    ,
+    print: {
+      items: 'Items',
+      thanks: 'Thank you for choosing us.'
+    }
   }
 };
 
@@ -448,3 +463,11 @@ export function useI18n() {
 }
 
 export const SUPPORTED_LANGS = ['it', 'de', 'en'];
+
+export function getTForLang(lang) {
+  return (key) => {
+    const l = messages[lang] ? lang : defaultLang;
+    const val = getNested(messages[l], key);
+    return val !== undefined ? val : key;
+  };
+}

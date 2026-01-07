@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { API_BASE, apiPut, apiDelete } from '../../src/lib/api';
 import { io } from 'socket.io-client';
+import { useRouter } from 'next/router';
+import { getTForLang } from '../../src/lib/i18n';
 
 export default function AdminOrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState([]);
   const [token, setToken] = useState(null);
   const [msg, setMsg] = useState('');
@@ -18,6 +21,7 @@ export default function AdminOrdersPage() {
   const [disabledMsg, setDisabledMsg] = useState('');
   const [disabledDuration, setDisabledDuration] = useState('');
   const [disabledUntil, setDisabledUntil] = useState(0);
+  const [printQueue, setPrintQueue] = useState([]);
 
   useEffect(() => {
     const t = localStorage.getItem('token');
@@ -37,6 +41,9 @@ export default function AdminOrdersPage() {
     if (!token) return;
     const socket = io(API_BASE, { transports: ['websocket'] });
     const handler = (evt) => {
+      if (evt && evt.status === 'ricevuto') {
+        setPrintQueue((q) => (q.includes(evt.orderId) ? q : [...q, evt.orderId]));
+      }
       if (evt && evt.status === 'ricevuto' && soundEnabled) {
         try {
           let ctx = audioCtxRef.current;
@@ -141,6 +148,15 @@ export default function AdminOrdersPage() {
     };
   }, [ringing]);
 
+  useEffect(() => {
+    if (!printQueue.length) return;
+    const id = printQueue[0];
+    const o = (Array.isArray(orders) ? orders : []).find((x) => x._id === id);
+    if (!o) return;
+    printOrder(o);
+    setPrintQueue((q) => q.slice(1));
+  }, [orders, printQueue]);
+
   async function fetchOrders() {
     try {
       const res = await fetch(`${API_BASE}/orders`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
@@ -238,6 +254,50 @@ export default function AdminOrdersPage() {
     return found ? found.key : '';
   }
 
+  function printOrder(o) {
+    if (typeof window === 'undefined') return;
+    const prodMap = Object.fromEntries((products || []).map((p) => [p._id, p]));
+    const tL = getTForLang(o.lang || 'it');
+    const localeMap = { it: 'it-IT', de: 'de-DE', en: 'en-GB' };
+    const fmt = new Intl.NumberFormat(localeMap[o.lang] || 'it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
+    const payKeyMap = { stripe: 'checkout.payStripe', visa: 'checkout.payVisa', paypal: 'checkout.payPaypal', cash: 'checkout.payCash' };
+    const lines = (Array.isArray(o.items) ? o.items : []).map((it) => {
+      const p = prodMap[it.productId];
+      const name = p?.name || it.productId;
+      const extras = (Array.isArray(it.extras) ? it.extras : []).map((e) => `${e.name} +${fmt.format(Number(e.price || 0))}`).join(', ');
+      return `<div class="line"><span>${name} × ${it.quantity}</span>${extras ? `<span class="extras">${extras}</span>` : ''}</div>`;
+    }).join('');
+    const sched = o.scheduledAt ? ` ${o.scheduledAt}` : '';
+    const modeLabel = o.mode === 'delivery' ? tL('cart.mode.delivery') : tL('cart.mode.pickup');
+    const address = o.address ? `<div>Indirizzo: ${o.address}</div>` : '';
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Ordine ${o._id}</title><style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif; margin: 0; }
+      .receipt { width: 80mm; padding: 12px; }
+      .header { font-size: 18px; font-weight: 700; }
+      .sub { color: #333; font-size: 12px; }
+      .line { display: flex; flex-direction: column; margin: 6px 0; }
+      .extras { color: #555; font-size: 11px; }
+      .total { margin-top: 12px; font-weight: 600; }
+      @media print { .receipt { width: auto; } }
+    </style></head><body><div class="receipt">
+      <div class="header">${tL('home.hero.title')}</div>
+      <div class="sub">${tL('home.hero.address')}</div>
+      <div class="sub">Ordine #${String(o._id).slice(-6)} • ${new Date(o.createdAt).toLocaleString()}</div>
+      <div>${modeLabel}${sched}</div>
+      ${address}
+      <div>${tL('checkout.payment')}: ${tL(payKeyMap[o.paymentMethod] || '') || (o.paymentMethod || '-')}</div>
+      <div style="margin-top:8px">${tL('print.items')}</div>
+      ${lines}
+      <div class="total">${tL('cart.total')}: ${fmt.format(Number(o.total || 0))}</div>
+      <div class="sub" style="margin-top:8px">${tL('print.thanks')}</div>
+    </div><script>window.focus(); setTimeout(function(){ try{window.print();}catch(e){} try{window.close();}catch(e){} }, 50);</script></body></html>`;
+    const w = window.open('', 'PRINT', 'height=600,width=800');
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+  }
   function formatRemaining(diff) {
     const mins = Math.round(diff / 60000);
     const hours = Math.round(diff / 3600000);
@@ -256,7 +316,7 @@ export default function AdminOrdersPage() {
   return (
     <div>
       <div className="admin-back" style={{ marginBottom: 8 }}>
-        <button className="btn" onClick={() => router.push('/admin')}>⬅️ Torna alla Dashboard</button>
+        <button type="button" className="btn" onClick={() => router.push('/admin')}>⬅️ Torna alla Dashboard</button>
       </div>
       <h2>Admin • Ordini</h2>
       <div className="filters" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

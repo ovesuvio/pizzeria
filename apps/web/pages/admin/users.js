@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { API_BASE } from '../../src/lib/api';
 
 export default function AdminUsersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [token, setToken] = useState(null);
@@ -62,7 +64,7 @@ export default function AdminUsersPage() {
   return (
     <div>
       <div className="admin-back" style={{ marginBottom: 8 }}>
-        <button className="btn" onClick={() => { window.location.href = '/admin'; }}>⬅️ Torna alla Dashboard</button>
+        <button type="button" className="btn" onClick={() => router.push('/admin')}>⬅️ Torna alla Dashboard</button>
       </div>
       <h2>Admin • Utenti registrati</h2>
       {msg && <div className="status">{msg}</div>}

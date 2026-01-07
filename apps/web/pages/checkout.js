@@ -22,7 +22,7 @@ export default function CheckoutPage() {
   const [status, setStatus] = useState('');
   const [token, setToken] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('token') : null));
   const [mounted, setMounted] = useState(false);
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [disabledOrders, setDisabledOrders] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [custFirst, setCustFirst] = useState('');
@@ -83,6 +83,7 @@ export default function CheckoutPage() {
         paymentMethod: payment,
         customer: isAdmin ? { firstName: custFirst, lastName: custLast, phone: custPhone, email: custEmail } : undefined,
         mock: true,
+        lang,
       }, token);
       clear();
       setStatus(`${t('checkout.orderConfirmedPrefix')}${res.orderId}`);

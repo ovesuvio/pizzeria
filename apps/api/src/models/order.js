@@ -9,6 +9,7 @@ const OrderSchema = new mongoose.Schema({
   scheduledAt: String,
   paymentMethod: { type: String, enum: ['stripe', 'visa', 'paypal', 'cash'] },
   status: { type: String, default: 'ricevuto' },
+  lang: String,
   customerFirstName: String,
   customerLastName: String,
   customerPhone: String,

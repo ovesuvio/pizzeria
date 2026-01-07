@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 export default function AdminGalleryPage() {
+  const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [msg, setMsg] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -116,7 +118,7 @@ export default function AdminGalleryPage() {
   return (
     <div>
       <div className="admin-back" style={{ marginBottom: 8 }}>
-        <button className="btn" onClick={() => { window.location.href = '/admin'; }}>⬅️ Torna alla Dashboard</button>
+        <button type="button" className="btn" onClick={() => router.push('/admin')}>⬅️ Torna alla Dashboard</button>
       </div>
       <h2>Admin • Galleria</h2>
       {msg && <div className="status">{msg}</div>}
