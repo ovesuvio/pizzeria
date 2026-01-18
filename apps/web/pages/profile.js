@@ -99,7 +99,7 @@ export default function ProfilePage() {
         }
       } catch (_) {}
     } catch (e) {
-      setMsg(t('profile.messages.loginError'));
+      setMsg(e?.message || t('profile.messages.loginError'));
     }
   }
 
