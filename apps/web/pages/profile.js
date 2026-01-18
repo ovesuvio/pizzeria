@@ -82,7 +82,7 @@ export default function ProfilePage() {
 
   async function login() {
     try {
-      const res = await apiPost('/auth/login', { email, password });
+      const res = await apiPost('/auth/login', { email: (email || '').trim(), password });
       localStorage.setItem('token', res.token);
       setMsg(t('profile.messages.loginSuccess'));
       setLogged(true);

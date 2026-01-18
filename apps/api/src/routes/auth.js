@@ -30,13 +30,14 @@ module.exports = function(memory, db) {
   });
 
   router.post('/login', async (req, res) => {
-    const { email, phone, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Credenziali mancanti' });
+    const loginId = (typeof req.body.email === 'string' && req.body.email.trim()) || (typeof req.body.user === 'string' && req.body.user.trim()) || '';
+    const { password } = req.body;
+    if (!loginId || !password) return res.status(400).json({ error: 'Credenziali mancanti' });
     let user;
     if (db.useMemory) {
-      user = memory.users.find(u => u.email === email);
+      user = memory.users.find(u => u.email === loginId);
     } else {
-      user = await User.findOne({ email });
+      user = await User.findOne({ email: loginId });
     }
     if (!user) return res.status(404).json({ error: 'Utente non trovato' });
     const ok = await bcrypt.compare(password, user.passwordHash);
