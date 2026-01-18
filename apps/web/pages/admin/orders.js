@@ -8,6 +8,7 @@ export default function AdminOrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState([]);
   const [token, setToken] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [msg, setMsg] = useState('');
   const [products, setProducts] = useState([]);
   const [users, setUsers] = useState([]);
@@ -28,7 +29,18 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     const t = localStorage.getItem('token');
     setToken(t);
-    if (!t) setMsg('Accesso admin richiesto');
+    if (!t) {
+      setMsg('Accesso admin richiesto');
+    } else {
+      try {
+        const p = JSON.parse(atob(t.split('.')[1]));
+        setIsAdmin(!!p?.isAdmin);
+        if (!p?.isAdmin) setMsg('Accesso admin richiesto');
+      } catch (_) {
+        setIsAdmin(false);
+        setMsg('Accesso admin richiesto');
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -237,10 +249,15 @@ export default function AdminOrdersPage() {
 
   async function updateStatusConfig() {
     try {
-      await apiPut('/orders/status', { disabled: disabledOrders, message: disabledMsg, duration: disabledDuration }, token);
+      if (!token || !isAdmin) {
+        setMsg('Accesso admin richiesto');
+        return;
+      }
+      const payload = { disabled: disabledOrders, message: disabledMsg, duration: disabledDuration || (disabledOrders ? '2h' : '') };
+      await apiPut('/orders/status', payload, token);
       setMsg('Configurazione aggiornata');
-    } catch (_) {
-      setMsg('Errore aggiornamento configurazione');
+    } catch (e) {
+      setMsg(e?.message || 'Errore aggiornamento configurazione');
     }
   }
 
