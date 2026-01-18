@@ -199,8 +199,8 @@ export default function ProfilePage() {
       {!logged ? (
         <div className="form" style={{ marginTop: 16 }}>
           <h3>{t('profile.login.title')}</h3>
-          <label>{t('profile.fields.email')}</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email" />
+          <label>{t('profile.fields.user')}</label>
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user" />
           <label>{t('profile.fields.password')}</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" />
           <div className="actions">

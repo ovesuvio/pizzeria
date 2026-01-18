@@ -69,8 +69,8 @@ test('Flusso completo: menu → carrello → checkout → admin update', async (
 
   // Login admin e aggiorna stato
   await page.getByRole('link', { name: 'Profilo' }).click();
-  await page.locator('input[placeholder="email"]').fill('admin@ovesuvio.com');
-  await page.locator('input[placeholder="password"]').fill('admin123');
+  await page.locator('input[placeholder="email"]').fill('ovesuviogp');
+  await page.locator('input[placeholder="password"]').fill('Admin123');
   await page.getByRole('button', { name: 'Login' }).click();
   await expect(page.locator('.status')).toContainText('Login effettuato');
 

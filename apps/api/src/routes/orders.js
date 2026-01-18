@@ -1,12 +1,79 @@
 const express = require('express');
 const net = require('net');
 const Order = require('../models/order');
+const Product = require('../models/product');
 const auth = require('../middleware/auth');
 const { notifyOrderStatus } = require('../lib/notify');
 
 module.exports = function(memory, db) {
   const router = express.Router();
   memory.settings = memory.settings || { orderingDisabled: false, orderingMessage: '', orderingDisabledUntil: 0, printerMode: 'browser', printers: [] };
+
+  function buildEscpos(text) {
+    const init = Buffer.from([0x1b, 0x40]);
+    const content = Buffer.from(String(text || '').replace(/\n/g, '\r\n') + '\r\n\r\n');
+    const cut = Buffer.from([0x1d, 0x56, 0x00]);
+    return Buffer.concat([init, content, cut]);
+  }
+
+  async function autoPrintOrder(order, products) {
+    const mode = memory.settings.printerMode || 'browser';
+    if (mode === 'browser') return;
+    
+    const printers = Array.isArray(memory.settings.printers) ? memory.settings.printers : [];
+    if (!printers.length) return;
+
+    const prodMap = Object.fromEntries((products || []).map((p) => [p._id, p]));
+    const fmt = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
+    
+    const payKeyMap = { stripe: 'Stripe', visa: 'Visa', paypal: 'PayPal', cash: 'Contanti' };
+    const sched = order.scheduledAt ? ` ${order.scheduledAt}` : '';
+    const modeLabel = order.mode === 'delivery' ? 'Consegna' : 'Ritiro';
+    
+    const linesText = [
+      'O Vesuvio',
+      'Via Roma 123, 80100 Napoli',
+      `Ordine #${String(order._id).slice(-6)} • ${new Date(order.createdAt).toLocaleString()}`,
+      `${modeLabel}${sched}`,
+      order.address ? `Indirizzo: ${order.address}` : '',
+      `Pagamento: ${payKeyMap[order.paymentMethod] || order.paymentMethod || '-'}`,
+      '',
+      'Articoli:',
+      ...((Array.isArray(order.items) ? order.items : []).map((it) => {
+        const p = prodMap[it.productId];
+        const name = p?.name || it.productId;
+        const extras = (Array.isArray(it.extras) ? it.extras : []).map((e) => `${e.name} +${fmt.format(Number(e.price || 0))}`).join(', ');
+        return `${name} × ${it.quantity}${extras ? ` (${extras})` : ''}`;
+      })),
+      '',
+      `Totale: ${fmt.format(Number(order.total || 0))}`,
+      'Grazie per aver ordinato!',
+    ].filter(Boolean).join('\n');
+
+    const payload = buildEscpos(linesText);
+    const results = [];
+    for (const p of printers) {
+      const host = p.host || 'localhost';
+      const port = Number(p.port || 9100);
+      const name = p.name || '';
+      try {
+        await new Promise((resolve) => {
+          const socket = net.createConnection({ host, port }, () => {
+            try { socket.write(payload); } catch (_) {}
+            try { socket.end(); } catch (_) {}
+          });
+          const done = () => resolve();
+          socket.on('error', done);
+          socket.on('end', done);
+          socket.on('close', done);
+        });
+        results.push({ name, host, port, ok: true });
+      } catch (e) {
+        results.push({ name, host, port, ok: false, error: e?.message });
+      }
+    }
+    return results;
+  }
 
   router.get('/', auth(true), async (_req, res) => {
     if (db.useMemory) return res.json(memory.orders);
@@ -111,20 +178,40 @@ module.exports = function(memory, db) {
       order.customerPhone = customer.phone || '';
       order.customerEmail = customer.email || '';
     }
+    
+    let createdOrder;
     if (db.useMemory) {
       memory.orders.unshift(order);
       // Mock pagamento ok
       if (!mock) {
         // TODO: integra Stripe/PayPal reali
       }
-      req.io.emit('order_update', { orderId: order._id, status: order.status, userId });
-      notifyOrderStatus(memory, db, { userId, orderId: order._id, status: order.status });
-      return res.json({ ok: true, orderId: order._id });
+      createdOrder = order;
+    } else {
+      createdOrder = await Order.create(order);
     }
-    const created = await Order.create(order);
-    req.io.emit('order_update', { orderId: created._id, status: created.status, userId: created.userId });
-    notifyOrderStatus(memory, db, { userId: created.userId, orderId: created._id, status: created.status });
-    res.json({ ok: true, orderId: created._id });
+    
+    // Emit immediato per notifica realtime
+    req.io.emit('order_update', { orderId: createdOrder._id, status: createdOrder.status, userId: createdOrder.userId });
+    notifyOrderStatus(memory, db, { userId: createdOrder.userId, orderId: createdOrder._id, status: createdOrder.status });
+    
+    // Stampa automatica se configurata per rete
+    if (memory.settings.printerMode === 'network' && memory.settings.printers && memory.settings.printers.length > 0) {
+      try {
+        let products = [];
+        if (!db.useMemory) {
+          const productIds = (createdOrder.items || []).map(item => item.productId).filter(Boolean);
+          if (productIds.length > 0) {
+            products = await Product.find({ _id: { $in: productIds } });
+          }
+        } else {
+          products = memory.products || [];
+        }
+        autoPrintOrder(createdOrder, products).catch(() => {});
+      } catch (_) {}
+    }
+    
+    res.json({ ok: true, orderId: createdOrder._id });
   });
 
   router.put('/:id/status', auth(true), async (req, res) => {

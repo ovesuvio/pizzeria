@@ -7,6 +7,7 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const bcrypt = require('bcryptjs');
+const User = require('./src/models/user');
 
 const PORT = process.env.PORT || 4000;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -37,17 +38,28 @@ const memory = {
 
 function seedUsers() {
   if (memory.users.length === 0) {
-    const hash = bcrypt.hashSync('admin123', 10);
-    memory.users.push({ _id: 'u_admin', email: 'admin@ovesuvio.com', phone: '07161-811727', passwordHash: hash, isAdmin: true });
+    const hash = bcrypt.hashSync('Admin123', 10);
+    memory.users.push({ _id: 'u_admin', email: 'ovesuviogp', phone: '07161-811727', passwordHash: hash, isAdmin: true });
   }
 }
 seedUsers();
 
 let db = { useMemory: true };
 if (MONGODB_URI) {
-  mongoose.connect(MONGODB_URI).then(() => {
+  mongoose.connect(MONGODB_URI).then(async () => {
     db.useMemory = false;
     console.log('MongoDB connesso');
+    try {
+      const email = 'ovesuviogp';
+      let admin = await User.findOne({ email });
+      if (!admin) {
+        const hash = bcrypt.hashSync('Admin123', 10);
+        admin = await User.create({ firstName: 'Admin', lastName: 'O Vesuvio', email, phone: '07161-811727', address: '', passwordHash: hash, isAdmin: true, privacyConsent: true, privacyConsentAt: new Date(), privacyPolicyVersion: process.env.PRIVACY_VERSION || 'v1' });
+        console.log('Admin creato in MongoDB:', email);
+      }
+    } catch (e) {
+      console.log('Errore creazione admin in MongoDB:', e.message);
+    }
   }).catch((err) => {
     console.log('MongoDB non disponibile, uso memoria:', err.message);
   });

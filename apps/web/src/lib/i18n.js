@@ -24,6 +24,7 @@ const messages = {
       fields: {
         firstName: 'Nome',
         lastName: 'Cognome',
+        user: 'User',
         email: 'Email',
         phone: 'Telefono',
         address: 'Indirizzo',
@@ -162,6 +163,7 @@ const messages = {
       fields: {
         firstName: 'Vorname',
         lastName: 'Nachname',
+        user: 'Benutzer',
         email: 'E-Mail',
         phone: 'Telefon',
         address: 'Adresse',
@@ -300,6 +302,7 @@ const messages = {
       fields: {
         firstName: 'First name',
         lastName: 'Last name',
+        user: 'User',
         email: 'Email',
         phone: 'Phone',
         address: 'Address',
